@@ -1,0 +1,84 @@
+module top_module (
+    input clk,
+    input reset,
+    input [3:1] s,
+    output fr3,
+    output fr2,
+    output fr1,
+    output dfr
+); 
+    //L = coming from low, H = coming from high
+    parameter LESS_THAN_S1=0, S1S2L=1, S1S2H=2, S2S3L=3, S2S3H=4, GREATER_THAN_S3=5;
+    reg[2:0] state, nextState;
+    
+    always @(posedge clk) begin
+        if(reset)
+            state <= LESS_THAN_S1;
+        else
+            state <= nextState;
+    end
+    
+    always @(*) begin
+        case(state)
+            LESS_THAN_S1: begin
+                if(s == 3'b000)
+                    nextState = LESS_THAN_S1;
+                else
+                    nextState = S1S2L;
+            end
+            
+            S1S2L: begin
+                if(s == 3'b001)
+                    nextState = S1S2L;
+                else if (s == 3'b000)
+                    nextState = LESS_THAN_S1;
+                else
+                    nextState = S2S3L;
+            end
+            
+            S1S2H: begin
+                if(s == 3'b001)
+                    nextState = S1S2H;
+                else if (s == 3'b000)
+                    nextState = LESS_THAN_S1;
+                else
+                    nextState = S2S3L;
+            end
+            
+            S2S3L: begin
+                if(s == 3'b011)
+                    nextState = S2S3L;
+                else if (s == 3'b001)
+                    nextState = S1S2H;
+                else
+                    nextState = GREATER_THAN_S3;
+            end
+            
+            S2S3H: begin
+                 if(s == 3'b011)
+                    nextState = S2S3H;
+                else if (s == 3'b001)
+                    nextState = S1S2H;
+                else
+                    nextState = GREATER_THAN_S3;
+            end
+            
+            GREATER_THAN_S3: begin
+                if(s == 3'b111)
+                    nextState = GREATER_THAN_S3;
+                else if (s == 3'b011)
+                    nextState = S2S3H;
+                else
+                    nextState = GREATER_THAN_S3;
+            end
+            
+            default: nextState = LESS_THAN_S1;
+        endcase
+    end
+    
+    assign fr3 = (state == LESS_THAN_S1);
+    assign fr2 = (state == LESS_THAN_S1 | state == S1S2L | state == S1S2H);
+    assign fr1 = (state == LESS_THAN_S1 | state == S1S2L | state == S1S2H | state == S2S3H | state == S2S3L);
+    assign dfr = (state == S1S2H | state == S2S3H | state == LESS_THAN_S1);
+ 
+endmodule
